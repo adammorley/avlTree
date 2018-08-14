@@ -188,7 +188,7 @@ func (t *avlTree) search(i int) *node {
 
 // recursive search for a value at a given node
 func (n *node) search(i int) *node {
-    if n.value == i {
+    if i == n.value {
         return n
     } else if i < n.value && n.left != nil {
         return n.left.search(i)
