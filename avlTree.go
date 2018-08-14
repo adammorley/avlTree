@@ -46,6 +46,10 @@ func newNode(i int) *node {
     return n
 }
 
+/*
+    NODE INSERTION
+*/
+
 //insert the provided interface into the tree
 func (t *avlTree) Insert(i int) {
     var r *node = t.getRoot()
@@ -157,9 +161,246 @@ func (n *node) rebalance() *node {
 /*func (t0 *avlTree) Merge(t1 *avlTree) {
 }*/
 
-// remove from a tree; if inserted > 1 time, decrement the count
-/*func (t *avlTree) Remove(i int) bool {
-}*/
+
+/*
+    VALUE DELETION
+*/
+
+// remove from a tree; if inserted > 1 time, decrement the count instead of removing the node
+func (t *avlTree) Delete(i int) bool {
+    var r *node = t.getRoot()
+
+    // handle root case
+    if r == nil {
+        return false
+    } else if r.value == i && r.left == nil && r.right == nil && r.count == 1 {
+        assert(t.Size() == 1, "root deletion, but size wrong")
+        t.root = nil
+        t.size = 0
+        return true
+    }
+
+    // handle value stored more than once case
+    var n *node = t.search(i)
+    if n == nil {
+        return false
+    } else if n.count > 1 {
+        n.count -= 1
+        return true
+    }
+
+    // handle node removal (last stored value)
+    if n.right == nil && n.left == nil {
+        r = n.removeNoChildren()
+    } else if n.right == nil {
+        r = n.removeNoRightChildren()
+    } else if n.right != nil && n.right.left == nil {
+        r = n.removeRightNoLeft()
+    } else if n.right != nil && n.right.left != nil {
+        r = n.removeComplex()
+    } else {
+        assert(false, "unhandled node removal")
+    }
+
+    // update root
+    if r == nil {
+        t.root = nil
+    } else if r.parent != nil {
+        assert(false, "root parent not nil")
+    }
+    t.root = r
+    t.size -= 1
+    return true
+}
+
+// replace node c with x at p
+func (c *node) replaceNode(p *node, x *node) {
+    if x != nil {
+        x.parent = p
+    }
+    if p == nil { // root case
+        return
+    } else if p.left == c {
+        p.left = x
+    } else if p.right == c {
+        p.right = x
+    } else {
+        assert(false, "unhandled parent/child case")
+    }
+}
+
+// remove a node with no children, simply update the balance factors and retrace
+func (n *node) removeNoChildren() *node {
+    var p *node = n.parent
+    if p == nil { // root node
+        return nil
+    } else if p.right == n {
+        p.bf -= 1
+    } else {
+        p.bf += 1
+    }
+    n.replaceNode(p, nil)
+    return p.retraceRemove()
+}
+
+/*
+    remove a node with no right children, simply swap children
+
+    10
+   /  \
+  3   20*
+     /  
+    15
+
+    to
+
+    10
+   /  \
+  3   15
+*/
+func (n *node) removeNoRightChildren() *node {
+    var p, x *node = n.parent, n.left
+    n.replaceNode(p, x)
+    if p == nil && x.parent == nil { // root node
+        return x
+    } else {
+        return x.retraceRemove()
+    }
+}
+
+/*
+    remove node with right child, but child has no left children
+
+    10
+   /  \
+  3   20
+     /  \
+    15  25*
+          \
+          30
+            \
+            40
+
+    to
+
+    10
+   /  \
+  3   20
+     /  \
+    15   30
+           \
+           40
+*/
+func (n *node) removeRightNoLeft() *node {
+    var p, x *node = n.parent, n.right
+    x.left = n.left
+    x.bf = n.bf - 1
+    n.replaceNode(p, x)
+    if p == nil && x.parent == nil { // root node
+        return x
+    } else {
+        return x.retraceRemove()
+    }
+}
+
+/*
+    node has a right child and child has left children; traverse down and re-home left most child.  don't drop right child of left most child!
+
+    10
+   /  \
+  3   20
+     /  \
+    15  25*
+       /  \
+      24  30
+         /  \
+        27  40
+         \
+         28
+
+    to
+
+    10
+   /  \
+  3   20
+     /  \
+    15  27
+       /  \
+      24  30
+         /  \
+        28  40
+*/
+func (n *node) removeComplex() *node {
+    var c *node = n.right
+    // find the availble left node
+    for c.left != nil {
+        c = c.left
+    }
+
+    // find the child
+    if c.right != nil {
+        c.parent.left = c.right
+    } else {
+        c.parent.left = nil
+    }
+
+    // height shrinks
+    var p *node = c.parent
+    p.bf += 1
+
+    // put the child in the right place
+    c.bf = n.bf
+    n.replaceNode(n.parent, c)
+
+    // swap in the children from n to c
+    n.left.parent = c
+    c.left = n.left
+    n.right.parent = c
+    c.right = n.right
+
+    // retrace
+    if p == nil && c.parent == nil {
+        return c
+    } else {
+        return p.retraceRemove()
+    }
+}
+
+// node n just had a child removed, retrace & rebalance if needed, returning new root node
+func (n *node) retraceRemove() *node {
+    /*
+        note the break cases:
+            if node removal was absorbed at n (combined with case below)
+            if after rebalance, removal was absorbed
+            if node doesn't have parent (root node)
+            otherwise, update balance factors, check asserts, loop
+    */
+    for {
+        if n.bf == 2 || n.bf == -2 {
+            n = n.rebalance()
+        }
+        assert(n.bf < 2 && n.bf > -2, "node balance factor out of range after rebalance")
+        if n.bf == 1 || n.bf == -1 {
+            break
+        } else if n.parent == nil {
+            break
+        } else if n.parent.value < n.value {
+            n.parent.bf -= 1
+        } else if n.parent.value > n.value {
+            n.parent.bf += 1
+        } else {
+            assert(false, "unhandled parent/child relationship")
+        }
+        assert(n.parent.bf < 3 && n.parent.bf > -3, "balance factor invariant")
+        n = n.parent
+    }
+    assert(n != nil, "n null")
+    return n.upToRoot()
+}
+
+/*
+    NODE SEARCH
+*/
 
 type SearchError struct {
     val int
@@ -167,7 +408,6 @@ type SearchError struct {
 func (e *SearchError) Error() string {
     return fmt.Sprintf("could not find value %v in tree", e.val)
 }
-
 // search for a value
 func (t *avlTree) Search(i int) (int, error) {
     r := t.search(i)
