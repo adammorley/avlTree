@@ -1,4 +1,5 @@
 // implements an AVL tree, a balanced binary search tree.  this implementation stores integers
+// XXX could add: in-order, pre-order, post-order, tree merge
 package avlTree
 
 import "fmt"
@@ -8,7 +9,7 @@ import "math"
 // a node consists of the count of the number of times a value has been stored, a balance factor (to do tree balancing, the pointers to the parent, left and right children, and the value itself.
 type node struct {
     /*
-        packing into uint16 to fit both into 32bits
+        packing into uint8 to fit both into 16bits
     */
     // number of times this interface has been put in the node
     count uint8
@@ -23,7 +24,7 @@ type node struct {
 type avlTree struct {
     root *node
     // number of nodes; not total count (need to walk tree and sum count)
-    size uint64
+    size uint
 }
 
 //create a new binary tree
@@ -50,7 +51,7 @@ func newNode(i int) *node {
     NODE INSERTION
 */
 
-//insert the provided interface into the tree
+//insert the int into the tree
 func (t *avlTree) Insert(i int) {
     var r *node = t.getRoot()
     if r == nil {
@@ -156,11 +157,6 @@ func (n *node) rebalance() *node {
     }
     return n
 }
-
-// XXX merge two trees
-/*func (t0 *avlTree) Merge(t1 *avlTree) {
-}*/
-
 
 /*
     VALUE DELETION
@@ -439,7 +435,7 @@ func (n *node) search(i int) *node {
     }
 }
 
-func (t *avlTree) Size() uint64 {
+func (t *avlTree) Size() uint {
     return t.size
 }
 

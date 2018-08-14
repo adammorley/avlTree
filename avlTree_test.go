@@ -19,10 +19,14 @@ func TestDoubleInsertAndDelete(test *testing.T) {
 
     if !tree.Delete(1) {
         test.Error("deletion does not work")
-    } else if _, e := tree.Search(1); e == nil {
-        test.Error("should not find value")
     } else if tree.Size() != 0 {
         test.Error("wrong size")
+    }
+    _, e := tree.Search(1)
+    if e == nil {
+        test.Error("should not find value")
+    } else if _, ok := e.(*SearchError); !ok {
+        test.Error("type returned from search incorrect", e)
     }
 }
 
@@ -97,7 +101,7 @@ func createBigTree(nums []int, c int, test *testing.T) *avlTree {
     var tree *avlTree = New()
     for i := 0; i <= c; i++ {
         tree.Insert(nums[i])
-        if tree.Size() != uint64(i + 1) {
+        if tree.Size() != uint(i + 1) {
             test.Error("wrong size tree at ", i)
         }
     }
