@@ -25,9 +25,9 @@ func (i MyInt) EqualTo(j interface{}) bool {
 */
 
 type Interface interface {
-    LessThan(j interface{}) bool
-    GreaterThan(j interface{}) bool
-    EqualTo(j interface{}) bool
+	LessThan(j interface{}) bool
+	GreaterThan(j interface{}) bool
+	EqualTo(j interface{}) bool
 }
 
 // a node of the tree.  note that inserting the same value multiple times results in a increment to the counter, not multiple stores

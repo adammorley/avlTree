@@ -5,19 +5,20 @@ import "math"
 import "testing"
 
 type Int int
+
 var MaxInt Int = Int(math.MaxInt64)
 var MinInt Int = Int(math.MinInt64)
 
 func (i Int) LessThan(j interface{}) bool {
-    return i < j.(Int)
+	return i < j.(Int)
 }
 
 func (i Int) GreaterThan(j interface{}) bool {
-    return i > j.(Int)
+	return i > j.(Int)
 }
 
 func (i Int) EqualTo(j interface{}) bool {
-    return i == j.(Int)
+	return i == j.(Int)
 }
 
 func TestDoubleInsertAndDelete(test *testing.T) {
@@ -26,7 +27,7 @@ func TestDoubleInsertAndDelete(test *testing.T) {
 	insertOneAndCheck(test, tree)
 	insertOneAndCheck(test, tree)
 
-    var one Int = Int(1)
+	var one Int = Int(1)
 	if !tree.Delete(one) {
 		test.Error("deletion does not work")
 	} else if _, e := tree.Search(one); e != nil {
@@ -49,7 +50,7 @@ func TestDoubleInsertAndDelete(test *testing.T) {
 }
 
 func insertOneAndCheck(test *testing.T, tree *avlTree) {
-    var one Int = Int(1)
+	var one Int = Int(1)
 	tree.Insert(one)
 	if _, e := tree.Search(one); e != nil {
 		test.Error("couldn't find value")
@@ -114,14 +115,14 @@ func TestMany(test *testing.T) {
 func testManyLoop(s int, k int, c int, n []Int, test *testing.T) {
 	var tree *avlTree = createBigTree(n, c, test)
 	for i := s; i <= c-2; i += 2 {
-        var x Int = Int(i)
+		var x Int = Int(i)
 		if !tree.Delete(x) {
 			test.Error("could not remove", i)
 		}
 	}
 	checkBalanceFactor(tree.getRoot(), test)
 	for i := k; i <= c-2; i += 2 {
-        var x Int = Int(i)
+		var x Int = Int(i)
 		if _, e := tree.Search(x); e != nil {
 			test.Error("could not find", x)
 		}
@@ -143,13 +144,13 @@ func TestInorder(test *testing.T) {
 	var tree *avlTree = New()
 	var s, f int = 0, 10
 	for i := s; i <= f; i++ {
-        var x Int = Int(i)
+		var x Int = Int(i)
 		tree.Insert(x)
 	}
 	var l *list.List = tree.Inorder()
 	var e *list.Element = l.Front()
 	for i := s; i <= f; i++ {
-        var x Int = Int(i)
+		var x Int = Int(i)
 		if e.Value != x {
 			test.Error("wrong value", e.Value, x)
 		}
