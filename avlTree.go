@@ -77,20 +77,16 @@ func newNode(i Interface) *node {
 func (t *avlTree) Inorder() *list.List {
 	var l *list.List = list.New()
 	var n *node = t.getRoot()
-	if n == nil {
-		return l
-	}
 	inorder(n, l)
 	return l
 }
 
 func inorder(n *node, l *list.List) {
-	if n == nil {
-		return
+	if n != nil {
+		inorder(n.left, l)
+		l.PushBack(n.value)
+		inorder(n.right, l)
 	}
-	inorder(n.left, l)
-	l.PushBack(n.value)
-	inorder(n.right, l)
 }
 
 /*
@@ -694,9 +690,6 @@ func (t *avlTree) getRoot() *node {
 
 // iterate up to the root of the tree
 func (n *node) upToRoot() *node {
-	if n == nil {
-		return nil
-	}
 	for n.parent != nil {
 		n = n.parent
 	}
