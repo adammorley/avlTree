@@ -1,10 +1,34 @@
 // implements an AVL tree, a balanced binary search tree.  this implementation stores integers
-// XXX could add: in-order, pre-order, post-order, tree merge
+// XXX could add: pre-order, post-order, tree merge
 package avlTree
 
 import "container/list"
 import "fmt"
 import "math"
+
+/*
+    consumers of this package must implement the following interfaces in order for the AVL tree to order the elements of the tree.  it's critical to use a type assertion; as a type assertion can cause a panic if the types don't match, optionally one can use a type-testing assertion (eg: i, ok := j.(TYPE) if !ok ...).  however, this would require a minor modification to the Interface of this package, as it would need to allow for error handling (eg: type mismatch)
+
+type MyInt int
+
+func (i MyInt) LessThan(j interface{}) bool {
+    return i < j.(MyInt)
+}
+
+func (i MyInt) GreaterThan(j interface{}) bool {
+    return i > j.(MyInt)
+}
+
+func (i MyInt) EqualTo(j interface{}) bool {
+    return i == j.(MyInt)
+}
+*/
+
+type Interface interface {
+    LessThan(j interface{}) bool
+    GreaterThan(j interface{}) bool
+    EqualTo(j interface{}) bool
+}
 
 // a node of the tree.  note that inserting the same value multiple times results in a increment to the counter, not multiple stores
 // a node consists of the count of the number of times a value has been stored, a balance factor (to do tree balancing, the pointers to the parent, left and right children, and the value itself.
@@ -17,7 +41,7 @@ type node struct {
 	parent *node
 	left   *node
 	right  *node
-	value  int
+	value  Interface
 }
 
 type avlTree struct {
@@ -34,7 +58,7 @@ func New() *avlTree {
 }
 
 // create a new node
-func newNode(i int) *node {
+func newNode(i Interface) *node {
 	var n *node = new(node)
 	n.left = nil
 	n.right = nil
@@ -74,7 +98,7 @@ func inorder(n *node, l *list.List) {
 */
 
 //insert the int into the tree
-func (t *avlTree) Insert(i int) {
+func (t *avlTree) Insert(i Interface) {
 	var r *node = t.getRoot()
 	if r == nil {
 		r = newNode(i)
@@ -100,13 +124,13 @@ func (t *avlTree) Insert(i int) {
 
 // insert a new node c into the tree starting at node n, maintaining tree balance
 func (n *node) insert(c *node) *node {
-	if c.value < n.value && n.left != nil {
+	if c.value.LessThan(n.value) && n.left != nil {
 		return n.left.insert(c)
-	} else if c.value > n.value && n.right != nil {
+	} else if c.value.GreaterThan(n.value) && n.right != nil {
 		return n.right.insert(c)
-	} else if c.value < n.value && n.left == nil {
+	} else if c.value.LessThan(n.value) && n.left == nil {
 		n.left = c
-	} else if c.value > n.value && n.right == nil {
+	} else if c.value.GreaterThan(n.value) && n.right == nil {
 		n.right = c
 	}
 	c.parent = n
@@ -170,9 +194,9 @@ func (n *node) rebalance() *node {
 	}
 	if n.parent == nil {
 		return n
-	} else if n.parent.value < n.value {
+	} else if n.parent.value.LessThan(n.value) {
 		n.parent.right = n
-	} else if n.parent.value > n.value {
+	} else if n.parent.value.GreaterThan(n.value) {
 		n.parent.left = n
 	} else {
 		assert(false, "unhandled parent/child case")
@@ -185,13 +209,13 @@ func (n *node) rebalance() *node {
 */
 
 // remove from a tree; if inserted > 1 time, decrement the count instead of removing the node
-func (t *avlTree) Delete(i int) bool {
+func (t *avlTree) Delete(i Interface) bool {
 	var r *node = t.getRoot()
 
 	// handle root case
 	if r == nil {
 		return false
-	} else if r.value == i && r.left == nil && r.right == nil && r.count == 1 {
+	} else if r.value.EqualTo(i) && r.left == nil && r.right == nil && r.count == 1 {
 		assert(t.Size() == 1, "root deletion, but size wrong")
 		t.root = nil
 		t.size = 0
@@ -402,9 +426,9 @@ func (n *node) retraceRemove() *node {
 			break
 		} else if n.parent == nil {
 			break
-		} else if n.parent.value < n.value {
+		} else if n.parent.value.LessThan(n.value) {
 			n.parent.bf -= 1
-		} else if n.parent.value > n.value {
+		} else if n.parent.value.GreaterThan(n.value) {
 			n.parent.bf += 1
 		} else {
 			assert(false, "unhandled parent/child relationship")
@@ -421,7 +445,7 @@ func (n *node) retraceRemove() *node {
 */
 
 type SearchError struct {
-	val int
+	val Interface
 }
 
 func (e *SearchError) Error() string {
@@ -429,16 +453,16 @@ func (e *SearchError) Error() string {
 }
 
 // search for a value
-func (t *avlTree) Search(i int) (int, error) {
+func (t *avlTree) Search(i Interface) (Interface, error) {
 	r := t.search(i)
 	if r == nil {
-		return 0, &SearchError{val: i}
+		return nil, &SearchError{val: i}
 	}
 	return r.value, nil
 }
 
 // search a tree for a value, return the node with the value
-func (t *avlTree) search(i int) *node {
+func (t *avlTree) search(i Interface) *node {
 	var n *node = t.getRoot()
 	if n == nil {
 		return nil
@@ -447,12 +471,12 @@ func (t *avlTree) search(i int) *node {
 }
 
 // recursive search for a value at a given node
-func (n *node) search(i int) *node {
-	if i == n.value {
+func (n *node) search(i Interface) *node {
+	if i.EqualTo(n.value) {
 		return n
-	} else if i < n.value && n.left != nil {
+	} else if i.LessThan(n.value) && n.left != nil {
 		return n.left.search(i)
-	} else if i > n.value && n.right != nil {
+	} else if i.GreaterThan(n.value) && n.right != nil {
 		return n.right.search(i)
 	} else {
 		return nil
