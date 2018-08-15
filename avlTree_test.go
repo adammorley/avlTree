@@ -1,5 +1,6 @@
 package avlTree
 
+import "container/list"
 import "math"
 import "testing"
 
@@ -55,6 +56,36 @@ func TestBigTree(test *testing.T) {
 
 }
 
+func makeNumbers(c int) []int {
+    var nums []int = make([]int, c+2)
+    for i := 0; i < c; i++ {
+        nums[i] = i;
+    }
+    nums[c-1] = math.MaxInt64
+    nums[c] = math.MinInt64
+    return nums
+}
+
+func createBigTree(nums []int, c int, test *testing.T) *avlTree {
+    var tree *avlTree = New()
+    for i := 0; i <= c; i++ {
+        tree.Insert(nums[i])
+        if tree.Size() != uint(i + 1) {
+            test.Error("wrong size tree at ", i)
+        }
+    }
+    return tree
+}
+
+func checkBalanceFactor(n *node, test *testing.T) {
+    if n == nil {
+        return
+    } else if n.bf > 2 || n.bf < -2 {
+        test.Error("node ", n.value, " has incorrect balance factor ", n.bf)
+    }
+    checkBalanceFactor(n.left, test)
+    checkBalanceFactor(n.right, test)
+}
 func TestMany(test *testing.T) {
     for i := 1; i <= 999; i++ {
         testManyInternal(i, test)
@@ -87,33 +118,18 @@ func testManyInternal(c int, test *testing.T) {
     testManyLoop(1, 0, c, n, test)
 }
 
-func makeNumbers(c int) []int {
-    var nums []int = make([]int, c+2)
-    for i := 0; i < c; i++ {
-        nums[i] = i;
-    }
-    nums[c-1] = math.MaxInt64
-    nums[c] = math.MinInt64
-    return nums
-}
-
-func createBigTree(nums []int, c int, test *testing.T) *avlTree {
+func TestInorder(test *testing.T) {
     var tree *avlTree = New()
-    for i := 0; i <= c; i++ {
-        tree.Insert(nums[i])
-        if tree.Size() != uint(i + 1) {
-            test.Error("wrong size tree at ", i)
+    var s, f int = 0, 10
+    for i := s; i <= f; i++ {
+        tree.Insert(i)
+    }
+    var l *list.List = tree.Inorder()
+    var e *list.Element = l.Front()
+    for i := s; i <= f; i++ {
+        if e.Value != i {
+            test.Error("wrong value", e.Value, i)
         }
+        e = e.Next()
     }
-    return tree
-}
-
-func checkBalanceFactor(n *node, test *testing.T) {
-    if n == nil {
-        return
-    } else if n.bf > 2 || n.bf < -2 {
-        test.Error("node ", n.value, " has incorrect balance factor ", n.bf)
-    }
-    checkBalanceFactor(n.left, test)
-    checkBalanceFactor(n.right, test)
 }

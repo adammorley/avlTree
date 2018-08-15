@@ -2,6 +2,7 @@
 // XXX could add: in-order, pre-order, post-order, tree merge
 package avlTree
 
+import "container/list"
 import "fmt"
 import "math"
 
@@ -45,6 +46,30 @@ func newNode(i int) *node {
     n.count = 1
     n.bf = 0
     return n
+}
+
+/*
+    NODE VISITATION IN ORDER
+*/
+
+// Inorder returns a container/list of elements which are the values in the tree in order.  note that while the avlTree allows storage of a given value multiple times, the returned list is simply the node values in order, irrespective of count
+func (t *avlTree) Inorder() *list.List {
+    var l *list.List = list.New()
+    var n *node = t.getRoot()
+    if n == nil {
+        return l
+    }
+    inorder(n, l)
+    return l
+}
+
+func inorder(n *node, l *list.List) {
+    if n == nil {
+        return
+    }
+    inorder(n.left, l)
+    l.PushBack(n.value)
+    inorder(n.right, l)
 }
 
 /*
