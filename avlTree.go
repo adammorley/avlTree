@@ -2,9 +2,12 @@
 // XXX could add: pre-order, post-order, tree merge
 package avlTree
 
-import "container/list"
-import "fmt"
-import "math"
+import (
+	"container/list"
+	"fmt"
+	"log"
+	"math"
+)
 
 /*
     consumers of this package must implement the following interfaces in order for the AVL tree to order the elements of the tree.  it's critical to use a type assertion; as a type assertion can cause a panic if the types don't match, optionally one can use a type-testing assertion (eg: i, ok := j.(TYPE) if !ok ...).  however, this would require a minor modification to the Interface of this package, as it would need to allow for error handling (eg: type mismatch)
@@ -31,11 +34,9 @@ type Interface interface {
 }
 
 // a node of the tree.  note that inserting the same value multiple times results in a increment to the counter, not multiple stores
-// a node consists of the count of the number of times a value has been stored, a balance factor (to do tree balancing, the pointers to the parent, left and right children, and the value itself.
+// a node consists of the count of the number of times a value has been stored, a balance factor (to do tree balancing), the pointers to the parent, left and right children, and the value itself.
 type node struct {
-	/*
-	   packing into uint8 to fit both into 16bits
-	*/
+	//packing into uint8 to fit both into 16bits
 	count  uint8 // number of times this interface has been put in the node
 	bf     int8  // the balance factor for the node
 	parent *node
@@ -50,23 +51,23 @@ type avlTree struct {
 }
 
 //create a new binary tree
-func New() *avlTree {
-	var t *avlTree = new(avlTree)
+func New() (t *avlTree) {
+	t = new(avlTree)
 	t.root = nil
 	t.size = 0
-	return t
+	return
 }
 
 // create a new node
-func newNode(i Interface) *node {
-	var n *node = new(node)
+func newNode(i Interface) (n *node) {
+	n = new(node)
 	n.left = nil
 	n.right = nil
 	n.parent = nil
 	n.value = i
 	n.count = 1
 	n.bf = 0
-	return n
+	return
 }
 
 /*
@@ -74,11 +75,11 @@ func newNode(i Interface) *node {
 */
 
 // Inorder returns a container/list of elements which are the values in the tree in order.  note that while the avlTree allows storage of a given value multiple times, the returned list is simply the node values in order, irrespective of count
-func (t *avlTree) Inorder() *list.List {
-	var l *list.List = list.New()
-	var n *node = t.getRoot()
+func (t *avlTree) Inorder() (l *list.List) {
+	l = list.New()
+	n := t.getRoot()
 	inorder(n, l)
-	return l
+	return
 }
 
 func inorder(n *node, l *list.List) {
@@ -130,11 +131,11 @@ func (n *node) insert(c *node) *node {
 		n.right = c
 	}
 	c.parent = n
-	return c.retraceInsert()
+	return retraceInsert(c)
 }
 
 // node c was just inserted, hence balance is zero; retrace up the tree and rebalance if needed
-func (c *node) retraceInsert() *node {
+func retraceInsert(c *node) *node {
 	var p *node = c
 	/*
 	   note break cases:
@@ -145,7 +146,7 @@ func (c *node) retraceInsert() *node {
 		p = p.parent
 		p.updateBalanceFactorInsert(c)
 		if p.bf == 2 || p.bf == -2 {
-			p = p.rebalance()
+			p = rebalance(p)
 		}
 		if p.parent == nil {
 			break
@@ -155,12 +156,12 @@ func (c *node) retraceInsert() *node {
 		}
 		c = p
 	}
-	return p.upToRoot()
+	return upToRoot(p)
 }
 
 // update the balance factor of the parent for node n
 func (p *node) updateBalanceFactorInsert(c *node) {
-	assert(p != nil, "parent is null")
+	assert(p != nil, "parent is nil")
 	if p.left == c {
 		p.bf -= 1
 	} else if p.right == c {
@@ -172,18 +173,18 @@ func (p *node) updateBalanceFactorInsert(c *node) {
 }
 
 // rebalance the tree as it is unbalanced, returning the new top node at that level
-func (n *node) rebalance() *node {
+func rebalance(n *node) *node {
 	if n.bf == 2 { // right heavy
 		if n.right.bf == 0 || n.right.bf == 1 { // right right
-			n = n.right_right()
+			n = right_right(n)
 		} else { // right left, n.right.bf == -1
-			n = n.right_left()
+			n = right_left(n)
 		}
 	} else if n.bf == -2 { // left heavy
 		if n.left.bf == -1 || n.left.bf == 0 { // left left
-			n = n.left_left()
+			n = left_left(n)
 		} else { // left right n.left.bf == 1
-			n = n.left_right()
+			n = left_right(n)
 		}
 	} else {
 		assert(false, "asked to rebalance but bf != 2")
@@ -229,13 +230,13 @@ func (t *avlTree) Delete(i Interface) bool {
 
 	// handle node removal (last stored value)
 	if n.right == nil && n.left == nil {
-		r = n.removeNoChildren()
+		r = removeNoChildren(n)
 	} else if n.right == nil {
-		r = n.removeNoRightChildren()
+		r = removeNoRightChildren(n)
 	} else if n.right != nil && n.right.left == nil {
-		r = n.removeRightNoLeft()
+		r = removeRightNoLeft(n)
 	} else if n.right != nil && n.right.left != nil {
-		r = n.removeComplex()
+		r = removeComplex(n)
 	} else {
 		assert(false, "unhandled node removal")
 	}
@@ -252,7 +253,7 @@ func (t *avlTree) Delete(i Interface) bool {
 }
 
 // replace node c with x at p
-func (c *node) replaceNode(p *node, x *node) {
+func replaceNode(c, p, x *node) {
 	if x != nil {
 		x.parent = p
 	}
@@ -268,7 +269,7 @@ func (c *node) replaceNode(p *node, x *node) {
 }
 
 // remove a node with no children, simply update the balance factors and retrace
-func (n *node) removeNoChildren() *node {
+func removeNoChildren(n *node) *node {
 	var p *node = n.parent
 	if p == nil { // root node
 		return nil
@@ -277,8 +278,8 @@ func (n *node) removeNoChildren() *node {
 	} else {
 		p.bf += 1
 	}
-	n.replaceNode(p, nil)
-	return p.retraceRemove()
+	replaceNode(n, p, nil)
+	return retraceRemove(p)
 }
 
 /*
@@ -296,13 +297,13 @@ func (n *node) removeNoChildren() *node {
    /  \
   3   15
 */
-func (n *node) removeNoRightChildren() *node {
+func removeNoRightChildren(n *node) *node {
 	var p, x *node = n.parent, n.left
-	n.replaceNode(p, x)
+	replaceNode(n, p, x)
 	if p == nil && x.parent == nil { // root node
 		return x
 	} else {
-		return x.retraceRemove()
+		return retraceRemove(x)
 	}
 }
 
@@ -329,15 +330,15 @@ func (n *node) removeNoRightChildren() *node {
            \
            40
 */
-func (n *node) removeRightNoLeft() *node {
+func removeRightNoLeft(n *node) *node {
 	var p, x *node = n.parent, n.right
 	x.left = n.left
 	x.bf = n.bf - 1
-	n.replaceNode(p, x)
+	replaceNode(n, p, x)
 	if p == nil && x.parent == nil { // root node
 		return x
 	} else {
-		return x.retraceRemove()
+		return retraceRemove(x)
 	}
 }
 
@@ -368,7 +369,7 @@ func (n *node) removeRightNoLeft() *node {
          /  \
         28  40
 */
-func (n *node) removeComplex() *node {
+func removeComplex(n *node) *node {
 	var c *node = n.right
 	// find the availble left node
 	for c.left != nil {
@@ -388,7 +389,7 @@ func (n *node) removeComplex() *node {
 
 	// put the child in the right place
 	c.bf = n.bf
-	n.replaceNode(n.parent, c)
+	replaceNode(n, n.parent, c)
 
 	// swap in the children from n to c
 	n.left.parent = c
@@ -400,12 +401,12 @@ func (n *node) removeComplex() *node {
 	if p == nil && c.parent == nil {
 		return c
 	} else {
-		return p.retraceRemove()
+		return retraceRemove(p)
 	}
 }
 
 // node n just had a child removed, retrace & rebalance if needed, returning new root node
-func (n *node) retraceRemove() *node {
+func retraceRemove(n *node) *node {
 	/*
 	   note the break cases:
 	       if node removal was absorbed at n (combined with case below)
@@ -415,7 +416,7 @@ func (n *node) retraceRemove() *node {
 	*/
 	for {
 		if n.bf == 2 || n.bf == -2 {
-			n = n.rebalance()
+			n = rebalance(n)
 		}
 		assert(n.bf < 2 && n.bf > -2, "node balance factor out of range after rebalance")
 		if n.bf == 1 || n.bf == -1 {
@@ -432,8 +433,8 @@ func (n *node) retraceRemove() *node {
 		assert(n.parent.bf < 3 && n.parent.bf > -3, "balance factor invariant")
 		n = n.parent
 	}
-	assert(n != nil, "n null")
-	return n.upToRoot()
+	assert(n != nil, "n nil")
+	return upToRoot(n)
 }
 
 /*
@@ -450,11 +451,11 @@ func (e *SearchError) Error() string {
 
 // search for a value
 func (t *avlTree) Search(i Interface) (Interface, error) {
-	r := t.search(i)
-	if r == nil {
+	var n *node = t.search(i)
+	if n == nil {
 		return nil, &SearchError{val: i}
 	}
-	return r.value, nil
+	return n.value, nil
 }
 
 // search a tree for a value, return the node with the value
@@ -463,17 +464,17 @@ func (t *avlTree) search(i Interface) *node {
 	if n == nil {
 		return nil
 	}
-	return n.search(i)
+	return search(n, i)
 }
 
 // recursive search for a value at a given node
-func (n *node) search(i Interface) *node {
+func search(n *node, i Interface) *node {
 	if i.EqualTo(n.value) {
 		return n
 	} else if i.LessThan(n.value) && n.left != nil {
-		return n.left.search(i)
+		return search(n.left, i)
 	} else if i.GreaterThan(n.value) && n.right != nil {
-		return n.right.search(i)
+		return search(n.right, i)
 	} else {
 		return nil
 	}
@@ -510,8 +511,8 @@ bf=[0,1]X   t2
        / \
       t0 t1
 */
-func (X *node) right_right() *node {
-	var Z *node = X.right
+func right_right(X *node) (Z *node) {
+	Z = X.right
 	assert(Z.bf != -1, "right left in right right case")
 	Z.parent = X.parent
 	X.parent = Z
@@ -529,7 +530,7 @@ func (X *node) right_right() *node {
 		X.bf = 0
 		Z.bf = 0
 	}
-	return Z
+	return
 }
 
 /*
@@ -549,10 +550,10 @@ bf=-1,0  X   Z bf=0,1
         / \  / \
       t0 t1 t2 t3
 */
-func (X *node) right_left() *node {
+func right_left(X *node) (Y *node) {
 	var Z *node = X.right
 	assert(Z.bf == -1, "right right in left right case")
-	var Y *node = Z.left
+	Y = Z.left
 	Y.parent = X.parent
 	Z.parent = Y
 	X.parent = Y
@@ -582,7 +583,7 @@ func (X *node) right_left() *node {
 	} else {
 		assert(false, "invalid balance factor for Y in right left case")
 	}
-	return Y
+	return
 }
 
 /*
@@ -600,8 +601,8 @@ bf=[-1,0] Z   t2
          / \
         t1  t2
 */
-func (X *node) left_left() *node {
-	var Z *node = X.left
+func left_left(X *node) (Z *node) {
+	Z = X.left
 	assert(Z.bf != 1, "left right case in left left")
 	Z.parent = X.parent
 	X.parent = Z
@@ -619,7 +620,7 @@ func (X *node) left_left() *node {
 		X.bf = 0
 		Z.bf = 0
 	}
-	return Z
+	return
 }
 
 /*
@@ -639,10 +640,10 @@ bf=0,1 Z   X bf=-1,0
      / \ / \
    t0 t1 t2 t3
 */
-func (X *node) left_right() *node {
+func left_right(X *node) (Y *node) {
 	var Z *node = X.left
 	assert(Z.bf == 1, "left left case in left right")
-	var Y *node = Z.right
+	Y = Z.right
 	Y.parent = X.parent
 	Z.parent = Y
 	X.parent = Y
@@ -672,24 +673,24 @@ func (X *node) left_right() *node {
 	} else {
 		assert(false, "unhandled balance factor for Y in left right case")
 	}
-	return Y
+	return
 }
 
 // support assert calls
 func assert(condition bool, msg string) {
 	if !condition {
-		panic(msg)
+		log.Fatal(msg)
 	}
 }
 
 // get the root node of a tree
 func (t *avlTree) getRoot() *node {
-	assert(t != nil, "tree is null")
+	assert(t != nil, "tree is nil")
 	return t.root
 }
 
 // iterate up to the root of the tree
-func (n *node) upToRoot() *node {
+func upToRoot(n *node) *node {
 	for n.parent != nil {
 		n = n.parent
 	}

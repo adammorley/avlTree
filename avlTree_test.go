@@ -1,8 +1,10 @@
 package avlTree
 
-import "container/list"
-import "math"
-import "testing"
+import (
+	"container/list"
+	"math"
+	"testing"
+)
 
 type Int int
 
@@ -41,18 +43,17 @@ func TestDoubleInsertAndDelete(test *testing.T) {
 	} else if tree.Size() != 0 {
 		test.Error("wrong size")
 	}
-	_, e := tree.Search(one)
-	if e == nil {
+	_, err := tree.Search(one)
+	if err == nil {
 		test.Error("should not find value")
-	} else if _, ok := e.(*SearchError); !ok {
-		test.Error("type returned from search incorrect", e)
+	} else if _, ok := err.(*SearchError); !ok {
+		test.Error("type returned from search incorrect", err)
 	}
 }
-
 func insertOneAndCheck(test *testing.T, tree *avlTree) {
 	var one Int = Int(1)
 	tree.Insert(one)
-	if _, e := tree.Search(one); e != nil {
+	if _, err := tree.Search(one); err != nil {
 		test.Error("couldn't find value")
 	} else if tree.Size() != 1 {
 		test.Error("wrong size")
@@ -60,42 +61,39 @@ func insertOneAndCheck(test *testing.T, tree *avlTree) {
 }
 
 func TestBigTree(test *testing.T) {
-	var c int = 5000
+	c := 5000
 	var nums []Int = makeNumbers(c)
 	var tree *avlTree = createBigTree(nums, c, test)
 	checkBalanceFactor(tree.getRoot(), test)
 	for i := 0; i <= c; i++ {
-		v, e := tree.Search(nums[i])
+		v, err := tree.Search(nums[i])
 		if v != nums[i] {
 			test.Error("missing number ", v)
-		} else if e != nil {
-			test.Error("got error ", e)
+		} else if err != nil {
+			test.Error("got error ", err)
 		}
 	}
 
 }
-
-func makeNumbers(c int) []Int {
-	var nums []Int = make([]Int, c+2)
+func makeNumbers(c int) (nums []Int) {
+	nums = make([]Int, c+2)
 	for i := 0; i < c; i++ {
 		nums[i] = Int(i)
 	}
 	nums[c-1] = MaxInt
 	nums[c] = MinInt
-	return nums
+	return
 }
-
-func createBigTree(nums []Int, c int, test *testing.T) *avlTree {
-	var tree *avlTree = New()
+func createBigTree(nums []Int, c int, test *testing.T) (tree *avlTree) {
+	tree = New()
 	for i := 0; i <= c; i++ {
 		tree.Insert(nums[i])
 		if tree.Size() != uint(i+1) {
 			test.Error("wrong size tree at ", i)
 		}
 	}
-	return tree
+	return
 }
-
 func checkBalanceFactor(n *node, test *testing.T) {
 	if n == nil {
 		return
@@ -106,53 +104,57 @@ func checkBalanceFactor(n *node, test *testing.T) {
 	checkBalanceFactor(n.right, test)
 }
 
+/*
+   test out many different tree cases
+*/
 func TestMany(test *testing.T) {
 	for i := 1; i <= 999; i++ {
 		testManyInternal(i, test)
 	}
 }
+func testManyInternal(c int, test *testing.T) {
+	var n []Int = makeNumbers(c)
+	for i := 2; i < 8; i++ {
+		testManyLoop(0, 1, c, i, n, test)
+		testManyLoop(1, 0, c, i, n, test)
+	}
+}
 
-func testManyLoop(s int, k int, c int, n []Int, test *testing.T) {
+/*
+   loop through the tree and delete values, then ensure nothing else
+   got dropped during deletion
+*/
+func testManyLoop(s, k, c, p int, n []Int, test *testing.T) {
 	var tree *avlTree = createBigTree(n, c, test)
-	for i := s; i <= c-2; i += 2 {
-		var x Int = Int(i)
-		if !tree.Delete(x) {
+	for i := s; i <= c-2; i += p {
+		if !tree.Delete(Int(i)) {
 			test.Error("could not remove", i)
 		}
 	}
 	checkBalanceFactor(tree.getRoot(), test)
-	for i := k; i <= c-2; i += 2 {
-		var x Int = Int(i)
-		if _, e := tree.Search(x); e != nil {
-			test.Error("could not find", x)
+	for i := k; i <= c-2; i += p {
+		if _, err := tree.Search(Int(i)); err != nil {
+			test.Error("could not find", i)
 		}
 	}
-	if _, e := tree.Search(MaxInt); e != nil {
+	if _, err := tree.Search(MaxInt); err != nil {
 		test.Error("could not find", MaxInt)
-	} else if _, e := tree.Search(MinInt); e != nil {
+	} else if _, err := tree.Search(MinInt); err != nil {
 		test.Error("could not find", MinInt)
 	}
 }
 
-func testManyInternal(c int, test *testing.T) {
-	var n []Int = makeNumbers(c)
-	testManyLoop(0, 1, c, n, test)
-	testManyLoop(1, 0, c, n, test)
-}
-
 func TestInorder(test *testing.T) {
-	var tree *avlTree = New()
+	tree := New()
 	var s, f int = 0, 10
 	for i := s; i <= f; i++ {
-		var x Int = Int(i)
-		tree.Insert(x)
+		tree.Insert(Int(i))
 	}
 	var l *list.List = tree.Inorder()
 	var e *list.Element = l.Front()
 	for i := s; i <= f; i++ {
-		var x Int = Int(i)
-		if e.Value != x {
-			test.Error("wrong value", e.Value, x)
+		if e.Value != Int(i) {
+			test.Error("wrong value", e.Value, Int(i))
 		}
 		e = e.Next()
 	}
