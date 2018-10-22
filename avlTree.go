@@ -112,8 +112,8 @@ func (t *avlTree) Inorder() func() (Interface, error) {
 				n = n.left
 			} else {
 				s.top = s.top - 1
-                n = s.pile[s.top].right
-                return s.pile[s.top].value, nil
+				n = s.pile[s.top].right
+				return s.pile[s.top].value, nil
 			}
 		}
 		return nil, errors.New("end of tree")
@@ -124,42 +124,53 @@ func (t *avlTree) Inorder() func() (Interface, error) {
    NODE INSERTION
 */
 
-//insert the int into the tree
+//insert the interface into the tree
 func (t *avlTree) Insert(i Interface) {
-	var r *node = t.getRoot()
-	if r == nil {
-		r = newNode(i)
-		t.root = r
-		assert(t.size < math.MaxUint64, "too many nodes in tree")
+	assert(t.size < math.MaxUint64, "too many nodes in tree")
+	if t.getRoot() == nil { // root case
+		assert(t.size == 0, "wrong size")
+		t.root = newNode(i)
 		t.size += 1
 		return
 	}
-	var n *node = t.search(i)
-	if n != nil { // value already inserted
+
+	var n *node = t.searchForClosest(i) // won't return nil
+	if n.value.EqualTo(i) {             // value already inserted
 		assert(n.count < math.MaxUint8, fmt.Sprintf("too many inserts of value %v", i))
 		n.count += 1
 		return
 	}
-	n = newNode(i)
-	r = r.insert(n)
+
+	c := newNode(i) // new node case
+	if c.value.LessThan(n.value) && n.left == nil {
+		n.left = c
+	} else if c.value.GreaterThan(n.value) && n.right == nil {
+		n.right = c
+	} else {
+		log.Fatal("invariant", c, n, n.left, n.right)
+	}
+	c.parent = n
+	n = retraceInsert(c)
+
 	// if the retracing in the insertion case rebalances the tree and changes the root, then update the root pointer in the tree.
-	if r.parent == nil {
-		t.root = r
+	if n.parent == nil {
+		t.root = n
 	}
 	t.size += 1
 }
 
 // insert a new node c into the tree starting at node n, maintaining tree balance
 func (n *node) insert(c *node) *node {
-	if c.value.LessThan(n.value) && n.left != nil {
-		return n.left.insert(c)
-	} else if c.value.GreaterThan(n.value) && n.right != nil {
-		return n.right.insert(c)
-	} else if c.value.LessThan(n.value) && n.left == nil {
-		n.left = c
-	} else if c.value.GreaterThan(n.value) && n.right == nil {
-		n.right = c
+	for c.value.LessThan(n.value) && n.left != nil || c.value.GreaterThan(n.value) && n.right != nil {
+		if c.value.LessThan(n.value) {
+			n = n.left
+		} else if c.value.GreaterThan(n.value) {
+			n = n.right
+		} else {
+			log.Fatal("invariant", c, n, n.left, n.right)
+		}
 	}
+
 	c.parent = n
 	return retraceInsert(c)
 }
@@ -488,32 +499,32 @@ func (t *avlTree) Search(i Interface) (Interface, error) {
 	return n.value, nil
 }
 
-// search a tree for a value, return the node with the value
+// search a tree for a value, return the node with the value, or nil
 func (t *avlTree) search(i Interface) *node {
+	n := t.searchForClosest(i)
+    if n == nil || !i.EqualTo(n.value) {
+        return nil
+    } else {
+		return n
+	}
+}
+
+// search for the closest node for the interface, using comparison (this allows re-use of the code by the insert case)
+func (t *avlTree) searchForClosest(i Interface) *node {
 	var n *node = t.getRoot()
 	if n == nil {
 		return nil
 	}
-	return search(n, i)
-}
-
-// search for a value at a given node, avoid recursion in case of big tree
-func search(n *node, i Interface) *node {
-    for !i.EqualTo(n.value) && (i.LessThan(n.value) && n.left != nil || i.GreaterThan(n.value) && n.right != nil) {
-        if i.LessThan(n.value) {
-            n = n.left
-        } else if i.GreaterThan(n.value) {
-            n = n.right
-        } else {
-            log.Fatal("invariant", i, n, n.left, n.right)
-        }
-    }
-
-    if i.EqualTo(n.value) {
-        return n
-    } else {
-        return nil
-    }
+	for !i.EqualTo(n.value) && (i.LessThan(n.value) && n.left != nil || i.GreaterThan(n.value) && n.right != nil) {
+		if i.LessThan(n.value) {
+			n = n.left
+		} else if i.GreaterThan(n.value) {
+			n = n.right
+		} else {
+			log.Fatal("invariant", i, n, n.left, n.right)
+		}
+	}
+	return n
 }
 
 func (t *avlTree) Size() uint64 {
