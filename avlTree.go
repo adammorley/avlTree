@@ -35,22 +35,22 @@ type Interface interface {
 
 // delete an interface from a tree; if inserted > 1 time, decrement the count instead of removing the node
 func (t *avlTree) Delete(i Interface) bool {
-    return t.delete(i)
+	return t.delete(i)
 }
 
 // return a function that allows iterating through a tree in order
 func (t *avlTree) Inorder() func() (Interface, error) {
-    return t.inorder()
+	return t.inorder()
 }
 
 // insert into a tree
 func (t *avlTree) Insert(i Interface) {
-    t.insert(i)
+	t.insert(i)
 }
 
 // search in a tree
 func (t *avlTree) Search(i Interface) (Interface, error) {
-    return t.search(i)
+	return t.search(i)
 }
 
 // a node of the tree.  note that inserting the same value multiple times results in a increment to the counter, not multiple stores
@@ -99,6 +99,7 @@ type stack struct {
 	pile []*node
 	top  uint
 }
+
 // Inorder returns a function which will return the next node in order in the tree.  This is done iteratively using a stack and pointer model
 func (t *avlTree) inorder() func() (Interface, error) {
 	s := new(stack)
