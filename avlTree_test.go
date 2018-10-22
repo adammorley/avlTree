@@ -1,7 +1,6 @@
 package avlTree
 
 import (
-	"container/list"
 	"math"
 	"testing"
 )
@@ -60,6 +59,44 @@ func insertOneAndCheck(test *testing.T, tree *avlTree) {
 	}
 }
 
+func TestHeight(test *testing.T) {
+	tree := new(avlTree)
+	tree.Insert(Int(1))
+	if tree.getHeight() != 1 {
+		test.Error("wrong height")
+	}
+	tree.Insert(Int(2))
+	if tree.getHeight() != 2 {
+		test.Error("wrong height")
+	}
+	tree.Insert(Int(3))
+	tree.Insert(Int(4))
+	if tree.getHeight() != 3 {
+		test.Error("wrong height")
+	}
+}
+
+func TestInorder(test *testing.T) {
+	tree := New()
+	var s, f int = 0, 10
+	for i := s; i <= f; i++ {
+		tree.Insert(Int(i))
+	}
+	inorder := tree.Inorder()
+	for i := s; i <= f; i++ {
+		v, err := inorder()
+		if err != nil {
+			test.Error("should've gotten no error", err)
+		} else if v != Int(i) {
+			test.Error("wrong value", v, Int(i))
+		}
+	}
+	_, err := inorder()
+	if err == nil {
+		test.Error("should've reached end of tree")
+	}
+}
+
 func TestBigTree(test *testing.T) {
 	c := 5000
 	var nums []Int = makeNumbers(c)
@@ -88,7 +125,7 @@ func createBigTree(nums []Int, c int, test *testing.T) (tree *avlTree) {
 	tree = New()
 	for i := 0; i <= c; i++ {
 		tree.Insert(nums[i])
-		if tree.Size() != uint(i+1) {
+		if tree.Size() != uint64(i+1) {
 			test.Error("wrong size tree at ", i)
 		}
 	}
@@ -141,21 +178,5 @@ func testManyLoop(s, k, c, p int, n []Int, test *testing.T) {
 		test.Error("could not find", MaxInt)
 	} else if _, err := tree.Search(MinInt); err != nil {
 		test.Error("could not find", MinInt)
-	}
-}
-
-func TestInorder(test *testing.T) {
-	tree := New()
-	var s, f int = 0, 10
-	for i := s; i <= f; i++ {
-		tree.Insert(Int(i))
-	}
-	var l *list.List = tree.Inorder()
-	var e *list.Element = l.Front()
-	for i := s; i <= f; i++ {
-		if e.Value != Int(i) {
-			test.Error("wrong value", e.Value, Int(i))
-		}
-		e = e.Next()
 	}
 }

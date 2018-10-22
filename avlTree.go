@@ -3,7 +3,7 @@
 package avlTree
 
 import (
-	"container/list"
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -45,16 +45,17 @@ type node struct {
 	value  Interface
 }
 
+const sizeBits = 64 // avoid using unsafe
 type avlTree struct {
 	root *node
-	size uint // number of nodes; not total count (need to walk tree and sum count)
+	size uint64 // number of nodes; not total count (need to walk tree and sum count)
 }
 
 //create a new binary tree
 func New() (t *avlTree) {
 	t = new(avlTree)
 	t.root = nil
-	t.size = 0
+	t.size = uint64(0)
 	return
 }
 
@@ -74,19 +75,51 @@ func newNode(i Interface) (n *node) {
    NODE VISITATION IN ORDER
 */
 
-// Inorder returns a container/list of elements which are the values in the tree in order.  note that while the avlTree allows storage of a given value multiple times, the returned list is simply the node values in order, irrespective of count
-func (t *avlTree) Inorder() (l *list.List) {
-	l = list.New()
-	n := t.getRoot()
-	inorder(n, l)
-	return
+type stack struct {
+	pile []*node
+	top  uint
 }
 
-func inorder(n *node, l *list.List) {
-	if n != nil {
-		inorder(n.left, l)
-		l.PushBack(n.value)
-		inorder(n.right, l)
+// get the height of the tree by finding the highest set bit in size and moving it over one.  this accounts for the dangling node case (eg a height 2 tree is 5
+func (t *avlTree) getHeight() uint {
+	if t.size == 0 {
+		return 0
+	}
+	assert(t.size&(1<<(sizeBits-1)) != 1, "tree is super large")
+	var i uint64
+	for i = sizeBits - 2; i >= 0; i-- {
+		set := (1 << i) & t.size
+		if set>>i == 1 {
+			twoToTheH := 1 << (i + 1)
+			return uint(math.Log2(float64(twoToTheH)))
+		}
+	}
+	assert(false, "cannot reach here")
+	return 0
+}
+
+// Inorder returns a function which will return the next node in order in the tree.  This is done iteratively using a stack and pointer model
+func (t *avlTree) Inorder() func() (Interface, error) {
+	assert(t.size > 0, "tree has no nodes")
+	s := new(stack)
+	s.top = 0
+	// the maximum size of the stack is the height of the tree
+	s.pile = make([]*node, t.getHeight())
+	n := t.getRoot()
+	return func() (Interface, error) {
+		for s.top > 0 || n != nil {
+			if n != nil {
+				s.pile[s.top] = n
+				s.top = s.top + 1
+				n = n.left
+			} else {
+				r := s.pile[s.top-1]
+				s.top = s.top - 1
+				n = r.right
+				return r.value, nil
+			}
+		}
+		return nil, errors.New("end of tree")
 	}
 }
 
@@ -480,7 +513,7 @@ func search(n *node, i Interface) *node {
 	}
 }
 
-func (t *avlTree) Size() uint {
+func (t *avlTree) Size() uint64 {
 	return t.size
 }
 
