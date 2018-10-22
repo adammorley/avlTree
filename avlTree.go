@@ -1,4 +1,4 @@
-// implements an AVL tree, a balanced binary search tree.  this implementation stores integers
+// implements an AVL tree, a balanced binary search tree for any arbitrary comparable interface
 // XXX could add: pre-order, post-order, tree merge
 package avlTree
 
@@ -80,7 +80,7 @@ type stack struct {
 	top  uint
 }
 
-// get the height of the tree by finding the highest set bit in size and moving it over one.  this accounts for the dangling node case (eg a height 2 tree is 5
+// get the height of the tree by finding the highest set bit in size and moving it over one.  this accounts for the dangling node case (eg a height 3 tree is 5 nodes, eg 5 (101) -> 8 (1000) -> log_2(8) == 3
 func (t *avlTree) getHeight() uint {
 	if t.size == 0 {
 		return 0
@@ -99,7 +99,6 @@ func (t *avlTree) getHeight() uint {
 
 // Inorder returns a function which will return the next node in order in the tree.  This is done iteratively using a stack and pointer model
 func (t *avlTree) Inorder() func() (Interface, error) {
-	assert(t.size > 0, "tree has no nodes")
 	s := new(stack)
 	// the maximum size of the stack is the height of the tree
 	s.pile = make([]*node, t.getHeight())
