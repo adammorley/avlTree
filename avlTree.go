@@ -33,6 +33,23 @@ type Interface interface {
 	EqualTo(j interface{}) bool
 }
 
+// delete an interface from a tree; if inserted > 1 time, decrement the count instead of removing the node
+func (t *avlTree) Delete(i Interface) bool {
+    return t.delete(i)
+}
+
+func (t *avlTree) Inorder() func() (Interface, error) {
+    return t.inorder()
+}
+
+func (t *avlTree) Insert(i Interface) {
+    t.insert(i)
+}
+
+func (t *avlTree) Search(i Interface) (Interface, error) {
+    return t.search(i)
+}
+
 // a node of the tree.  note that inserting the same value multiple times results in a increment to the counter, not multiple stores
 // a node consists of the count of the number of times a value has been stored, a balance factor (to do tree balancing), the pointers to the parent, left and right children, and the value itself.
 type node struct {
@@ -79,26 +96,8 @@ type stack struct {
 	pile []*node
 	top  uint
 }
-
-// get the height of the tree by finding the highest set bit in size and moving it over one.  this accounts for the dangling node case (eg a height 3 tree is 5 nodes, eg 5 (101) -> 8 (1000) -> log_2(8) == 3
-func (t *avlTree) getHeight() uint {
-	if t.size == 0 {
-		return 0
-	}
-	var i uint64
-	for i = sizeBits - 1; i >= 0; i-- {
-		set := (1 << i) & t.size
-		if set>>i == 1 {
-			twoToTheH := 1 << (i + 1)
-			return uint(math.Log2(float64(twoToTheH)))
-		}
-	}
-	assert(false, "cannot reach here")
-	return 0
-}
-
 // Inorder returns a function which will return the next node in order in the tree.  This is done iteratively using a stack and pointer model
-func (t *avlTree) Inorder() func() (Interface, error) {
+func (t *avlTree) inorder() func() (Interface, error) {
 	s := new(stack)
 	// the maximum size of the stack is the height of the tree
 	s.pile = make([]*node, t.getHeight())
@@ -124,7 +123,7 @@ func (t *avlTree) Inorder() func() (Interface, error) {
 */
 
 //insert the interface into the tree
-func (t *avlTree) Insert(i Interface) {
+func (t *avlTree) insert(i Interface) {
 	assert(t.size < math.MaxUint64, "too many nodes in tree")
 	if t.getRoot() == nil { // root case
 		assert(t.size == 0, "wrong size")
@@ -229,8 +228,7 @@ func rebalance(n *node) *node {
    VALUE DELETION
 */
 
-// remove from a tree; if inserted > 1 time, decrement the count instead of removing the node
-func (t *avlTree) Delete(i Interface) bool {
+func (t *avlTree) delete(i Interface) bool {
 	var r *node = t.getRoot()
 
 	// handle root case
@@ -244,8 +242,8 @@ func (t *avlTree) Delete(i Interface) bool {
 	}
 
 	// handle value stored more than once case
-	var n *node = t.search(i)
-	if n == nil {
+	var n *node = t.searchForClosest(i)
+	if n == nil || !i.EqualTo(n.value) {
 		return false
 	} else if n.count > 1 {
 		n.count -= 1
@@ -474,22 +472,12 @@ func (e *SearchError) Error() string {
 }
 
 // search for a value
-func (t *avlTree) Search(i Interface) (Interface, error) {
-	var n *node = t.search(i)
-	if n == nil {
+func (t *avlTree) search(i Interface) (Interface, error) {
+	var n *node = t.searchForClosest(i)
+	if n == nil || !i.EqualTo(n.value) {
 		return nil, &SearchError{val: i}
 	}
 	return n.value, nil
-}
-
-// search a tree for a value, return the node with the value, or nil
-func (t *avlTree) search(i Interface) *node {
-	n := t.searchForClosest(i)
-	if n == nil || !i.EqualTo(n.value) {
-		return nil
-	} else {
-		return n
-	}
 }
 
 // search for the closest node for the interface, using comparison (this allows re-use of the code by the insert case)
@@ -711,6 +699,23 @@ func assert(condition bool, msg string) {
 	if !condition {
 		log.Fatal(msg)
 	}
+}
+
+// get the height of the tree by finding the highest set bit in size and moving it over one.  this accounts for the dangling node case (eg a height 3 tree is 5 nodes, eg 5 (101) -> 8 (1000) -> log_2(8) == 3
+func (t *avlTree) getHeight() uint {
+	if t.size == 0 {
+		return 0
+	}
+	var i uint64
+	for i = sizeBits - 1; i >= 0; i-- {
+		set := (1 << i) & t.size
+		if set>>i == 1 {
+			twoToTheH := 1 << (i + 1)
+			return uint(math.Log2(float64(twoToTheH)))
+		}
+	}
+	assert(false, "cannot reach here")
+	return 0
 }
 
 // get the root node of a tree
