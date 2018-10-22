@@ -85,9 +85,8 @@ func (t *avlTree) getHeight() uint {
 	if t.size == 0 {
 		return 0
 	}
-	assert(t.size&(1<<(sizeBits-1)) != 1, "tree is super large")
 	var i uint64
-	for i = sizeBits - 2; i >= 0; i-- {
+	for i = sizeBits - 1; i >= 0; i-- {
 		set := (1 << i) & t.size
 		if set>>i == 1 {
 			twoToTheH := 1 << (i + 1)
@@ -498,17 +497,23 @@ func (t *avlTree) search(i Interface) *node {
 	return search(n, i)
 }
 
-// recursive search for a value at a given node
+// search for a value at a given node, avoid recursion in case of big tree
 func search(n *node, i Interface) *node {
-	if i.EqualTo(n.value) {
-		return n
-	} else if i.LessThan(n.value) && n.left != nil {
-		return search(n.left, i)
-	} else if i.GreaterThan(n.value) && n.right != nil {
-		return search(n.right, i)
-	} else {
-		return nil
-	}
+    for !i.EqualTo(n.value) && (i.LessThan(n.value) && n.left != nil || i.GreaterThan(n.value) && n.right != nil) {
+        if i.LessThan(n.value) {
+            n = n.left
+        } else if i.GreaterThan(n.value) {
+            n = n.right
+        } else {
+            log.Fatal("invariant", i, n, n.left, n.right)
+        }
+    }
+
+    if i.EqualTo(n.value) {
+        return n
+    } else {
+        return nil
+    }
 }
 
 func (t *avlTree) Size() uint64 {
