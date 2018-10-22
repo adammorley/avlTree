@@ -102,7 +102,6 @@ func (t *avlTree) getHeight() uint {
 func (t *avlTree) Inorder() func() (Interface, error) {
 	assert(t.size > 0, "tree has no nodes")
 	s := new(stack)
-	s.top = 0
 	// the maximum size of the stack is the height of the tree
 	s.pile = make([]*node, t.getHeight())
 	n := t.getRoot()
@@ -113,10 +112,9 @@ func (t *avlTree) Inorder() func() (Interface, error) {
 				s.top = s.top + 1
 				n = n.left
 			} else {
-				r := s.pile[s.top-1]
 				s.top = s.top - 1
-				n = r.right
-				return r.value, nil
+                n = s.pile[s.top].right
+                return s.pile[s.top].value, nil
 			}
 		}
 		return nil, errors.New("end of tree")
