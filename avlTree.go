@@ -38,14 +38,17 @@ func (t *avlTree) Delete(i Interface) bool {
     return t.delete(i)
 }
 
+// return a function that allows iterating through a tree in order
 func (t *avlTree) Inorder() func() (Interface, error) {
     return t.inorder()
 }
 
+// insert into a tree
 func (t *avlTree) Insert(i Interface) {
     t.insert(i)
 }
 
+// search in a tree
 func (t *avlTree) Search(i Interface) (Interface, error) {
     return t.search(i)
 }
