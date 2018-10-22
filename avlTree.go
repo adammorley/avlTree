@@ -159,22 +159,6 @@ func (t *avlTree) Insert(i Interface) {
 	t.size += 1
 }
 
-// insert a new node c into the tree starting at node n, maintaining tree balance
-func (n *node) insert(c *node) *node {
-	for c.value.LessThan(n.value) && n.left != nil || c.value.GreaterThan(n.value) && n.right != nil {
-		if c.value.LessThan(n.value) {
-			n = n.left
-		} else if c.value.GreaterThan(n.value) {
-			n = n.right
-		} else {
-			log.Fatal("invariant", c, n, n.left, n.right)
-		}
-	}
-
-	c.parent = n
-	return retraceInsert(c)
-}
-
 // node c was just inserted, hence balance is zero; retrace up the tree and rebalance if needed
 func retraceInsert(c *node) *node {
 	var p *node = c
@@ -502,9 +486,9 @@ func (t *avlTree) Search(i Interface) (Interface, error) {
 // search a tree for a value, return the node with the value, or nil
 func (t *avlTree) search(i Interface) *node {
 	n := t.searchForClosest(i)
-    if n == nil || !i.EqualTo(n.value) {
-        return nil
-    } else {
+	if n == nil || !i.EqualTo(n.value) {
+		return nil
+	} else {
 		return n
 	}
 }
